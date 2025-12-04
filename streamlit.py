@@ -37,7 +37,7 @@ def series_to_df(s: pd.Series, value_name: str, index_name: str) -> pd.DataFrame
 
 @st.cache_data(show_spinner=False)
 def load_data(path: str) -> pd.DataFrame:
-    df = pd.read_csv(path, encoding="utf-8-sig")
+    df = pd.read_csv(path, encoding="cp949")
     # 문자열 공백 정리
     if "시도" in df.columns:
         df["시도"] = df["시도"].astype(str).str.strip()
