@@ -7,6 +7,63 @@ import plotly.express as px
 import streamlit as st
 import streamlit.components.v1 as components
 
+def inject_custom_css():
+    st.markdown(
+        """
+        <style>
+        /* 전체 컨테이너 폭 & 여백 */
+        .main .block-container {
+            max-width: 1200px;
+            padding-top: 2rem;
+            padding-bottom: 3rem;
+        }
+
+        /* 타이틀 그라데이션 */
+        h1 {
+            font-size: 2.6rem !important;
+            font-weight: 800 !important;
+            background: linear-gradient(90deg, #ff4b4b, #fb923c, #facc15);
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        /* 사이드바 배경 */
+        [data-testid="stSidebar"] {
+            background-color: #020617;
+            border-right: 1px solid rgba(148, 163, 184, 0.3);
+        }
+
+        /* metric 카드 이쁘게 */
+        [data-testid="metric-container"] {
+            background-color: #020617;
+            border-radius: 0.75rem;
+            padding: 1rem 1.2rem;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.8);
+        }
+        [data-testid="metric-container"] > div {
+            color: #e5e7eb !important;
+        }
+
+        /* expander 스타일 */
+        details {
+            border-radius: 0.75rem;
+            background-color: #020617;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+        }
+
+        /* 데이터프레임 헤더 */
+        .stDataFrame thead tr th {
+            background-color: #020617 !important;
+            color: #e5e7eb !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+inject_custom_css()
+
 # -------------------------------------------------
 # 1. 페이지 기본 설정
 # -------------------------------------------------
