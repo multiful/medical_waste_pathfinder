@@ -1,78 +1,109 @@
 # ui_theme.py
-# 밝은 톤의 대시보드 공통 스킨
-
 import streamlit as st
-
+from streamlit_option_menu import option_menu
 
 def apply_theme() -> None:
-    """Streamlit 전역 UI 스킨 적용 (라이트 테마)."""
+    """밝은 종이 느낌 + 왼쪽 카드 메뉴 테마 적용"""
+
+    # ---- 전역 CSS (배경·글자색) ----
     st.markdown(
         """
         <style>
-        /* 전체 배경 & 기본 텍스트 */
+        :root {
+            --bg-main: #f4f5fb;
+            --bg-sidebar: #ffffff;
+            --card-bg: #ffffff;
+            --primary: #2563eb;
+            --text-main: #111827;   /* ✅ 글자색 진한 검정 */
+        }
+
+        /* 전체 앱 기본 배경 & 글자색 */
         .stApp {
-            background: #f5f7fb;
-            color: #111827;
-        }
-        header[data-testid="stHeader"] {
-            background: transparent !important;
-        }
-        .block-container {
-            padding-top: 2rem !important;
-            padding-bottom: 3rem !important;
-            max-width: 1200px;
+            background-color: var(--bg-main) !important;
+            color: var(--text-main) !important;
         }
 
-        /* 사이드바 카드 느낌 */
-        [data-testid="stSidebar"] > div {
-            background-color: #ffffff !important;
-            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
-            border-right: 1px solid #e5e7eb;
+        /* 거의 모든 텍스트 요소에 검정 적용 */
+        .stApp, .stApp div, .stApp span, .stApp p, .stApp li,
+        .stApp label, .stApp input, .stApp textarea {
+            color: var(--text-main) !important;
         }
-        [data-testid="stSidebar"] h1,
-        [data-testid="stSidebar"] h2 {
-            color: #111827 !important;
+
+        /* 메인 컨테이너 여백 약간 */
+        [data-testid="stAppViewContainer"] {
+            padding-top: 1rem;
         }
+
+        /* 헤더(제목) 살짝 진하게 */
+        h1, h2, h3, h4 {
+            color: #020617 !important;
+        }
+
+        /* 사이드바 */
         [data-testid="stSidebar"] {
-            color: #374151 !important;
+            background-color: var(--bg-sidebar) !important;
+        }
+        [data-testid="stSidebar"] * {
+            color: #0f172a !important;
         }
 
-        /* Metric 카드 */
-        .stMetric {
-            background-color: #ffffff !important;
-            border-radius: 0.8rem !important;
-            padding: 1rem 1.2rem !important;
-            box-shadow: 0 12px 30px rgba(148, 163, 184, 0.25) !important;
-            border: 1px solid #e5e7eb !important;
-        }
-        .stMetric label {
-            color: #6b7280 !important;
-            font-size: 0.78rem !important;
-            text-transform: uppercase;
-            letter-spacing: 0.09em;
-        }
-        .stMetric div[data-testid="stMetricValue"] {
-            color: #111827 !important;
+        /* metric 카드 배경/테두리 */
+        [data-testid="stMetric"] {
+            background-color: var(--card-bg) !important;
+            border-radius: 0.75rem;
+            padding: 0.75rem 0.9rem;
+            border: 1px solid #e2e8f0;
         }
 
-        /* Expander */
-        div[data-testid="stExpander"] {
-            background-color: #ffffff !important;
-            border-radius: 0.9rem !important;
-            border: 1px solid #e5e7eb !important;
+        /* 버튼 스타일 */
+        .stButton>button {
+            border-radius: 999px;
+            border: none;
+            background-color: var(--primary) !important;
+            color: white !important;
+            padding: 0.35rem 1.2rem;
+            font-weight: 600;
         }
-        div[data-testid="stExpander"] > details > summary {
-            color: #111827 !important;
-            font-weight: 600 !important;
-        }
-
-        /* 데이터프레임 헤더 */
-        .stDataFrame thead tr th {
-            background-color: #f9fafb !important;
-            color: #374151 !important;
-            font-weight: 600 !important;
+        .stButton>button:hover {
+            filter: brightness(1.05);
+            box-shadow: 0 8px 18px rgba(37,99,235,0.25);
         }
         </style>
         """,
         unsafe_allow_html=True,
     )
+
+    # ---- 사이드바 카드 메뉴 (option_menu) ----
+    with st.sidebar:
+        st.markdown("### Menu")
+        selected = option_menu(
+            menu_title=None,
+            options=["CVRP 경로"],   # 실제 페이지는 streamlit 기본 멀티페이지로 이동하니까
+            icons=["truck"],
+            menu_icon="cast",
+            default_index=0,
+            styles={
+                "container": {
+                    "padding": "0.5rem 0.5rem 1.2rem 0.5rem",
+                    "background-color": "#f8fafc",
+                    "border-radius": "1rem",
+                },
+                "icon": {
+                    "color": "#2563eb",
+                    "font-size": "20px",
+                },
+                "nav-link": {
+                    "font-size": "16px",
+                    "color": "#0f172a",         # ✅ 평상시 글자색: 검정
+                    "text-align": "left",
+                    "margin": "0px",
+                    "--hover-color": "#e0edff",
+                },
+                "nav-link-selected": {
+                    "background-color": "#2563eb",
+                    "color": "#ffffff",       # 선택된 메뉴는 파란 배경 + 흰 글씨
+                    "font-weight": "600",
+                },
+            },
+        )
+        # 이 메뉴는 그냥 스킨용이니까 선택 값은 따로 쓰지 않아도 됨
