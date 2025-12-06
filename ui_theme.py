@@ -1,109 +1,77 @@
 # ui_theme.py
 import streamlit as st
-from streamlit_option_menu import option_menu
 
-def apply_theme() -> None:
-    """밝은 종이 느낌 + 왼쪽 카드 메뉴 테마 적용"""
 
-    # ---- 전역 CSS (배경·글자색) ----
-    st.markdown(
-        """
-        <style>
-        :root {
-            --bg-main: #f4f5fb;
-            --bg-sidebar: #ffffff;
-            --card-bg: #ffffff;
-            --primary: #2563eb;
-            --text-main: #111827;   /* ✅ 글자색 진한 검정 */
-        }
+def apply_theme(theme_name: str = "paper-light") -> None:
+    """
+    - config.toml 에서 base/light + primaryColor 세팅한 걸 기본으로 쓰고
+    - 여기서는 글자색 / 사이드바 / 멀티셀렉트 pill 스타일만 살짝 손본다.
+    """
+    css = """
+    <style>
+    /* 전체 텍스트는 진한 회색 계열로 통일 */
+    .stApp, .stApp p, .stApp span, .stApp label, .stApp li,
+    .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {
+        color: #111827 !important;
+    }
 
-        /* 전체 앱 기본 배경 & 글자색 */
-        .stApp {
-            background-color: var(--bg-main) !important;
-            color: var(--text-main) !important;
-        }
+    /* 헤더 배경 투명하게 (위에 회색 띠 안 생기게) */
+    header[data-testid="stHeader"] {
+        background: transparent;
+    }
 
-        /* 거의 모든 텍스트 요소에 검정 적용 */
-        .stApp, .stApp div, .stApp span, .stApp p, .stApp li,
-        .stApp label, .stApp input, .stApp textarea {
-            color: var(--text-main) !important;
-        }
+    /* 메인 영역 살짝 여백 */
+    section.main > div {
+        padding-top: 0.5rem;
+    }
 
-        /* 메인 컨테이너 여백 약간 */
-        [data-testid="stAppViewContainer"] {
-            padding-top: 1rem;
-        }
+    /* 사이드바는 흰색 카드 느낌으로 */
+    [data-testid="stSidebar"] {
+        background-color: #FFFFFF !important;
+        color: #111827 !important;
+        border-right: 1px solid #E5E7EB !important;
+    }
 
-        /* 헤더(제목) 살짝 진하게 */
-        h1, h2, h3, h4 {
-            color: #020617 !important;
-        }
+    /* 사이드바 안의 제목(label) 색 진하게 */
+    [data-testid="stSidebar"] div[data-testid="stWidgetLabel"] > label {
+        color: #111827 !important;
+        font-weight: 600;
+    }
 
-        /* 사이드바 */
-        [data-testid="stSidebar"] {
-            background-color: var(--bg-sidebar) !important;
-        }
-        [data-testid="stSidebar"] * {
-            color: #0f172a !important;
-        }
+    /* 멀티셀렉트/셀렉트 박스 컨테이너 (검정 배경 제거) */
+    div[data-baseweb="select"] > div {
+        background-color: #F9FAFB !important;
+        border-radius: 12px !important;
+        border: 1px solid #E5E7EB !important;
+    }
 
-        /* metric 카드 배경/테두리 */
-        [data-testid="stMetric"] {
-            background-color: var(--card-bg) !important;
-            border-radius: 0.75rem;
-            padding: 0.75rem 0.9rem;
-            border: 1px solid #e2e8f0;
-        }
+    /* 멀티셀렉트 선택된 값 pill → 파란색 뱃지로 통일 */
+    div[data-baseweb="tag"] {
+        background-color: #2563EB !important;  /* 파란색 */
+        color: #FFFFFF !important;
+        border-radius: 999px !important;
+        border: none !important;
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+    }
+    div[data-baseweb="tag"] span {
+        color: #FFFFFF !important;
+    }
+    div[data-baseweb="tag"] svg {
+        fill: #FFFFFF !important;
+    }
 
-        /* 버튼 스타일 */
-        .stButton>button {
-            border-radius: 999px;
-            border: none;
-            background-color: var(--primary) !important;
-            color: white !important;
-            padding: 0.35rem 1.2rem;
-            font-weight: 600;
-        }
-        .stButton>button:hover {
-            filter: brightness(1.05);
-            box-shadow: 0 8px 18px rgba(37,99,235,0.25);
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # ---- 사이드바 카드 메뉴 (option_menu) ----
-    with st.sidebar:
-        st.markdown("### Menu")
-        selected = option_menu(
-            menu_title=None,
-            options=["CVRP 경로"],   # 실제 페이지는 streamlit 기본 멀티페이지로 이동하니까
-            icons=["truck"],
-            menu_icon="cast",
-            default_index=0,
-            styles={
-                "container": {
-                    "padding": "0.5rem 0.5rem 1.2rem 0.5rem",
-                    "background-color": "#f8fafc",
-                    "border-radius": "1rem",
-                },
-                "icon": {
-                    "color": "#2563eb",
-                    "font-size": "20px",
-                },
-                "nav-link": {
-                    "font-size": "16px",
-                    "color": "#0f172a",         # ✅ 평상시 글자색: 검정
-                    "text-align": "left",
-                    "margin": "0px",
-                    "--hover-color": "#e0edff",
-                },
-                "nav-link-selected": {
-                    "background-color": "#2563eb",
-                    "color": "#ffffff",       # 선택된 메뉴는 파란 배경 + 흰 글씨
-                    "font-weight": "600",
-                },
-            },
-        )
-        # 이 메뉴는 그냥 스킨용이니까 선택 값은 따로 쓰지 않아도 됨
+    /* 버튼 기본도 파란색 느낌으로 정리 (있으면) */
+    button[kind="primary"] {
+        background-color: #2563EB !important;
+        color: #FFFFFF !important;
+        border-radius: 999px !important;
+        border: none !important;
+    }
+    button[kind="secondary"] {
+        color: #2563EB !important;
+        border-color: #2563EB !important;
+    }
+    </style>
+    """
+    st.markdown(css, unsafe_allow_html=True)
