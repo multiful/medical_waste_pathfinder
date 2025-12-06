@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+2페이지: 의료폐기물 수요 모니터링 + CVRP 경로 결과 요약
+- 고위험군(서울/경기/부산) vs 일반지역 비교
+- CVRP 결과 지도 임베딩
+"""
+
 from pathlib import Path
 
 import numpy as np
@@ -7,116 +14,49 @@ import plotly.express as px
 import streamlit as st
 import streamlit.components.v1 as components
 
-from ui_theme import apply_theme
-
-apply_theme("neo-dark")   # 또는 "paper-light", "glass-dark"
-
-def inject_custom_css():
-    st.markdown(
-        """
-        <style>
-        /* 전체 컨테이너 폭 & 여백 */
-        .main .block-container {
-            max-width: 1200px;
-            padding-top: 2rem;
-            padding-bottom: 3rem;
-        }
-
-        /* 타이틀 그라데이션 */
-        h1 {
-            font-size: 2.6rem !important;
-            font-weight: 800 !important;
-            background: linear-gradient(90deg, #ff4b4b, #fb923c, #facc15);
-            -webkit-background-clip: text;
-            color: transparent;
-        }
-
-        /* 사이드바 배경 */
-        [data-testid="stSidebar"] {
-            background-color: #020617;
-            border-right: 1px solid rgba(148, 163, 184, 0.3);
-        }
-
-        /* metric 카드 이쁘게 */
-        [data-testid="metric-container"] {
-            background-color: #020617;
-            border-radius: 0.75rem;
-            padding: 1rem 1.2rem;
-            border: 1px solid rgba(148, 163, 184, 0.4);
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.8);
-        }
-        [data-testid="metric-container"] > div {
-            color: #e5e7eb !important;
-        }
-
-        /* expander 스타일 */
-        details {
-            border-radius: 0.75rem;
-            background-color: #020617;
-            border: 1px solid rgba(148, 163, 184, 0.4);
-        }
-
-        /* 데이터프레임 헤더 */
-        .stDataFrame thead tr th {
-            background-color: #020617 !important;
-            color: #e5e7eb !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-inject_custom_css()
+from ui_theme import apply_theme  # 스킨 적용
 
 # -------------------------------------------------
-# 1. 페이지 기본 설정
+# 1. 페이지 기본 설정 & 테마
 # -------------------------------------------------
+st.set_page_config(
+    page_title="의료폐기물 수요 모니터링 & 경로 결과",
+    page_icon="🚚",
+    layout="wide",
+)
+apply_theme()
 
 st.title("🚚 의료폐기물 수요 모니터링 & 동적 경로 결과 요약")
-st.caption("• 수요: cvrp_master_db.csv  • 노드: all_nodes.csv  • 예측: 2025_regional_forecast_final.csv")
+st.caption("• 수요: cvrp_master_db.csv  • 노드: all_nodes.csv")
 st.markdown("---")
-
-# 🔹 repo 루트 기준 data 폴더
-ROOT_DIR = Path(__file__).resolve().parent.parent   # pages/ 의 한 단계 위
-DATA_DIR = ROOT_DIR / "data"
-
 
 # -------------------------------------------------
 # 2. 데이터 로드 (캐싱)
 # -------------------------------------------------
 @st.cache_data
 def load_data():
-    cvrp_path = DATA_DIR / "cvrp_master_db.csv"
+    # ✅ 모든 CSV는 data/ 폴더 기준으로 읽기
+    data_dir = Path("./data")
+
+    # 1) 수요 마스터 DB
+    cvrp_path = data_dir / "cvrp_master_db.csv"
     if not cvrp_path.exists():
         st.error(f"❌ '{cvrp_path.resolve()}' 파일을 찾을 수 없습니다.")
-        return None, None, None
+        return None, None
 
-    file_size = cvrp_path.stat().st_size
-    st.caption(f"[DEBUG] cvrp_master_db.csv size on server: {file_size:,} bytes")
-
-    df = None
-    last_err = None
-    for enc in ("cp949", "utf-8-sig", "utf-8", "latin1"):
+    # 인코딩 + 빈 파일 방어
+    try:
         try:
-            df = pd.read_csv(cvrp_path, encoding=enc, low_memory=False)
-            st.caption(f"[DEBUG] loaded with encoding='{enc}', shape={df.shape}")
-            break
-        except UnicodeDecodeError as e:
-            last_err = e
-            continue
-        except pd.errors.EmptyDataError as e:
-            st.error(
-                "❌ cvrp_master_db.csv 를 읽는 중 pandas가 '빈 파일 또는 컬럼 없음'으로 인식했습니다.\n"
-                "서버에서의 파일 앞부분(raw bytes)을 아래에 출력합니다."
-            )
-            with cvrp_path.open("rb") as f:
-                head = f.read(200)
-            st.text(repr(head))
-            return None, None, None
-
-    if df is None:
-        st.error(f"❌ cvrp_master_db.csv 로딩 실패: {repr(last_err)}")
-        return None, None, None
+            df = pd.read_csv(cvrp_path, encoding="cp949")
+        except UnicodeDecodeError:
+            df = pd.read_csv(cvrp_path, encoding="utf-8-sig")
+    except pd.errors.EmptyDataError:
+        st.error(
+            f"❌ '{cvrp_path.name}' 파일이 비어 있습니다.\n"
+            "로컬에서 cvrp_master_db.csv 내용을 확인하고, "
+            "데이터가 들어있는 파일로 다시 업로드/커밋해 주세요."
+        )
+        return None, None
 
     if "Daily_Demand_Kg" not in df.columns:
         if "Daily_Demand" in df.columns:
@@ -124,8 +64,8 @@ def load_data():
         else:
             df["Daily_Demand_Kg"] = 0
 
-    # 2) 노드
-    nodes_path = DATA_DIR / "all_nodes.csv"
+    # 2) 노드 (위경도)
+    nodes_path = data_dir / "all_nodes.csv"
     nodes_df = pd.DataFrame()
     if nodes_path.exists():
         try:
@@ -133,22 +73,10 @@ def load_data():
         except UnicodeDecodeError:
             nodes_df = pd.read_csv(nodes_path, encoding="utf-8-sig")
 
-    # 3) 2025 예측
-    forecast_path = DATA_DIR / "2025_regional_forecast_final.csv"
-    forecast_df = pd.DataFrame()
-    if forecast_path.exists():
-        for enc in ("cp949", "utf-8-sig", "utf-8"):
-            try:
-                forecast_df = pd.read_csv(forecast_path, encoding=enc)
-                break
-            except UnicodeDecodeError:
-                continue
-
-    return df, nodes_df, forecast_df
+    return df, nodes_df
 
 
-# ✅ 여기서 한 번만 실제로 로드
-df_original, nodes_df, forecast_df = load_data()
+df_original, nodes_df = load_data()
 if df_original is None:
     st.stop()
 
@@ -366,7 +294,6 @@ cluster_summary["비중(%)"] = (
     cluster_summary["총수요_kg"] / cluster_summary["총수요_kg"].sum() * 100
 )
 
-
 c1, c2 = st.columns([1.5, 1])
 
 with c1:
@@ -409,152 +336,9 @@ with c2:
     )
 
 # -------------------------------------------------
-# 6. 2025년 시도별 예측 결과 요약
+# 6. CVRP 경로 결과 시각화 (사전 계산된 HTML)
 # -------------------------------------------------
-st.markdown("## 3. 2025년 시도별 의료폐기물 발생량 예측")
-
-if forecast_df is not None and not forecast_df.empty:
-
-    # 최근실적 컬럼 이름 정규화
-    for c in list(forecast_df.columns):
-        if "최근" in c and "실적" in c:
-            forecast_df = forecast_df.rename(columns={c: "최근실적"})
-            break
-
-    # 상태 레이블
-    if "증감률(%)" in forecast_df.columns:
-        def status_label(x):
-            try:
-                v = float(x)
-            except Exception:
-                return "🟢 감소/유지"
-            if v > 10:
-                return "🔴 급증"
-            elif v > 0:
-                return "🟠 증가"
-            else:
-                return "🟢 감소/유지"
-
-        forecast_df["Status"] = forecast_df["증감률(%)"].apply(status_label)
-    else:
-        forecast_df["Status"] = "정보 없음"
-
-    # 막대 차트
-    if "2025_예측" in forecast_df.columns and "시도" in forecast_df.columns:
-        fig_fc = px.bar(
-            forecast_df.sort_values("2025_예측", ascending=False),
-            x="시도",
-            y="2025_예측",
-            color="Status",
-            color_discrete_map={
-                "🔴 급증": "#FF4B4B",
-                "🟠 증가": "#FFAA00",
-                "🟢 감소/유지": "#00CC96",
-                "정보 없음": "#888888",
-            },
-            hover_data=[c for c in forecast_df.columns if c not in ["Status"]],
-            title="2025년 시도별 예측 발생량 (AutoML 선정 모델 기준)",
-        )
-        st.plotly_chart(fig_fc, use_container_width=True)
-
-    # 고위험군 vs 일반지역: 예측 관점에서 다시 비교
-    if {"시도", "2025_예측"}.issubset(forecast_df.columns):
-        fc_cluster = forecast_df[["시도", "2025_예측"]].copy()
-        fc_cluster["cluster"] = np.where(
-            fc_cluster["시도"].isin(HIGH_RISK_SIDO),
-            "고위험군(서울·경기·부산)",
-            "일반지역",
-        )
-        fc_summary = (
-            fc_cluster.groupby("cluster", as_index=False)["2025_예측"]
-            .sum()
-        )
-
-        # groupby 결과가 DataFrame 형태인지 확인하고 컬럼명 통일
-        if "2025_예측" in fc_summary.columns:
-            fc_summary = fc_summary.rename(columns={"2025_예측": "총예측_kg"})
-        else:
-            # Series 형태일 수 있어서 한 번 더 방어
-            fc_summary = fc_summary.to_frame(name="총예측_kg")
-
-        fc_summary["비중(%)"] = (
-            fc_summary["총예측_kg"] / fc_summary["총예측_kg"].sum() * 100
-        )
-
-        col_fc1, col_fc2 = st.columns([1.5, 1])
-
-        with col_fc1:
-            fig_fc_cluster = px.bar(
-                fc_summary,
-                x="cluster",
-                y="총예측_kg",
-                text=fc_summary["비중(%)"].map(lambda x: f"{x:.1f}%"),
-                title="2025년 예측 기준 고위험군 vs 일반지역",
-                color="cluster",
-                color_discrete_sequence=["#ff4b4b", "#4b8bff"],
-            )
-            fig_fc_cluster.update_traces(textposition="outside")
-            st.plotly_chart(fig_fc_cluster, use_container_width=True)
-
-        with col_fc2:
-            st.markdown("#### 🔁 예측 기준 클러스터 비중")
-            st.dataframe(
-                fc_summary
-                .rename(columns={"총예측_kg": "총예측(kg)"})
-                .style.format({"총예측(kg)": "{:,.0f}", "비중(%)": "{:.1f}%"}),
-                use_container_width=True,
-                hide_index=True,
-            )
-            st.markdown(
-                """
-- 2025년 예측에서도 고위험군의 비중은 크게 감소하지 않으며,  
-  **향후에도 서울·경기·부산 중심의 수거/소각 인프라 확충이 필요**함을 시사합니다.
-                """
-            )
-
-    # 상위/하위 지역 요약
-    col_hi, col_lo = st.columns(2)
-
-    with col_hi:
-        st.markdown("#### 🔴 예측 급증 지역 Top 3")
-        if "증감률(%)" in forecast_df.columns:
-            top_up = forecast_df.sort_values("증감률(%)", ascending=False).head(3)
-            st.dataframe(
-                top_up[["시도", "2025_예측", "증감률(%)", "사용모델"]]
-                .style.format({"2025_예측": "{:,.1f}", "증감률(%)": "{:+.2f}%"}),
-                use_container_width=True,
-                hide_index=True,
-            )
-        else:
-            st.info("증감률(%) 컬럼이 없어 급증 지역을 계산할 수 없습니다.")
-
-    with col_lo:
-        st.markdown("#### 🟢 감소/안정 지역 Top 3")
-        if "증감률(%)" in forecast_df.columns:
-            bottom = forecast_df.sort_values("증감률(%)", ascending=True).head(3)
-            st.dataframe(
-                bottom[["시도", "2025_예측", "증감률(%)", "사용모델"]]
-                .style.format({"2025_예측": "{:,.1f}", "증감률(%)": "{:+.2f}%"}),
-                use_container_width=True,
-                hide_index=True,
-            )
-        else:
-            st.info("증감률(%) 컬럼이 없어 안정/감소 지역을 계산할 수 없습니다.")
-
-    st.markdown(
-        """
-- 예측 모델 비교 결과, **LSTM이 가장 낮은 RMSE를 기록하여 최종 선택**되었고  
-  (ETS / ARIMA / RandomForest / Prophet 대비 우수)  
-- 이 섹션의 수치는 그 **LSTM 기반 예측값**을 바탕으로 합니다.
-        """
-    )
-else:
-    st.warning("⚠️ 2025 예측 결과 파일(2025_regional_forecast_final.csv)을 찾을 수 없어, 예측 섹션을 생략합니다.")
-
-# -------------------------------------------------
-# 7. CVRP 경로 결과 시각화 (사전 계산된 HTML)
-# -------------------------------------------------
-st.markdown("## 4. 동적 경로 최적화 결과 (CVRP)")
+st.markdown("## 3. 동적 경로 최적화 결과 (CVRP)")
 
 st.markdown(
     """
@@ -567,7 +351,7 @@ CVRP 결과 지도를 아래에 임베딩했습니다.
 )
 
 html_file_name = "cvrp_geojson_visualization_final.html"
-html_path = Path("data") / html_file_name
+html_path = Path("data") / html_file_name  # data 폴더 안에 있다고 가정
 
 if html_path.exists():
     try:
@@ -591,10 +375,10 @@ if html_path.exists():
     except Exception as e:
         st.error(f"경로 HTML 파일을 임베딩하는 중 오류가 발생했습니다: {e}")
 else:
-    st.warning(f"⚠️ '{html_file_name}' 파일을 찾을 수 없습니다. 경로 최적화 스크립트를 먼저 실행해 주세요.")
+    st.warning(f"⚠️ 'data/{html_file_name}' 파일을 찾을 수 없습니다. 경로 최적화 스크립트를 먼저 실행해 주세요.")
 
 # -------------------------------------------------
-# 8. 원본 데이터 미리보기 (선택 사항)
+# 7. 원본 데이터 미리보기 (선택 사항)
 # -------------------------------------------------
 with st.expander("🔍 원본 수요 데이터 미리보기 (필터 적용 후 상위 200행)", expanded=False):
     st.dataframe(
@@ -603,7 +387,7 @@ with st.expander("🔍 원본 수요 데이터 미리보기 (필터 적용 후 �
     )
 
 # -------------------------------------------------
-# 9. 자동 인사이트 요약 (발표용 문장)
+# 8. 자동 인사이트 요약 (발표용 문장)
 # -------------------------------------------------
 st.markdown("---")
 st.markdown("## 🧾 자동 인사이트 요약")
@@ -631,28 +415,6 @@ if not np.isnan(weekday_mean) and not np.isnan(weekend_mean):
         f"- 평일 평균 수요는 **{weekday_mean:,.1f} kg**, 주말은 **{weekend_mean:,.1f} kg**로, "
         f"평일이 주말보다 약 **{abs(diff):,.1f} kg** {direction}."
     )
-
-# 예측 데이터 기반
-if forecast_df is not None and not forecast_df.empty and {"시도", "2025_예측"}.issubset(forecast_df.columns):
-    fc_cluster = forecast_df[["시도", "2025_예측"]].copy()
-    fc_cluster["cluster"] = np.where(
-        fc_cluster["시도"].isin(HIGH_RISK_SIDO),
-        "고위험군",
-        "일반지역",
-    )
-    fc_summary = (
-        fc_cluster.groupby("cluster", as_index=False)["2025_예측"]
-        .sum()
-        .rename(columns={"2025_예측": "총예측"})
-    )
-    if len(fc_summary) == 2:
-        high_fc = fc_summary[fc_summary["cluster"] == "고위험군"]["총예측"].iloc[0]
-        low_fc = fc_summary[fc_summary["cluster"] == "일반지역"]["총예측"].iloc[0]
-        share_fc = high_fc / (high_fc + low_fc) * 100
-        insights.append(
-            f"- 2025년 예측 기준으로도 고위험군(서울·경기·부산)은 전체 예측 수요의 약 **{share_fc:.1f}%**를 유지하여, "
-            "향후에도 집중 관리가 필요한 권역으로 남을 가능성이 높습니다."
-        )
 
 if insights:
     for line in insights:
