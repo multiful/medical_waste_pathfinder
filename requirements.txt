@@ -7,3 +7,4 @@ folium
 geopandas
 streamlit_folium
 altair
+streamlit-option-menu
