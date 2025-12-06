@@ -82,7 +82,7 @@ st.set_page_config(
 )
 alt.data_transformers.disable_max_rows()
 st.title("의료폐기물 분석 대시보드")
-st.caption("데이터: final_df.csv (시도×연도 단위 의료폐기물 및 의료 인프라 지표)")
+
 
 DATA_FILE = "data/final_df.csv"
 GEO_FILE = "data/TL_SCCO_CTPRVN.json"  # 지도 파일 이름
@@ -520,9 +520,6 @@ with tab3:
             b1, b0 = np.polyfit(x, y, 1)
             r = np.corrcoef(x, y)[0, 1]
             r2 = r**2
-            st.caption(
-                f"단순 회귀식: 의료폐기물 = {b1:.3f} × 의료인프라 강도 + {b0:.3f}  (R² = {r2:.3f})"
-            )
 
         # 3) 지도 시각화: 시도별 지리적 분포 (변수 선택)
         st.markdown("#### (3) 시도별 지리적 분포 (지도)")
@@ -601,7 +598,6 @@ with tab3:
             f"- 요양병원 ↔ 의료인프라 강도: **r = {r2:.3f}**  \n"
             f"- 의료인프라 강도 ↔ 의료폐기물: **r = {r3:.3f}**"
         )
-        st.caption("※ 실제 SEM 결과(직접/간접효과·적합도)는 보고서에서 별도로 제시하고, 이 탭은 그 기초 관계를 시각화하는 용도.")
     else:
         st.info(
             f"'{INFRA_COL}', '{DENTAL_COL}', '{REHAB_COL}' 컬럼이 모두 있어야 인프라 탭을 그릴 수 있습니다."
@@ -681,6 +677,7 @@ if insight_lines:
         st.markdown(line)
 else:
     st.write("데이터에서 기본 인사이트를 추출할 수 없습니다. 컬럼 구성을 확인해주세요.")
+
 
 
 
