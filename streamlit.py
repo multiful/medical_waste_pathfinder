@@ -41,12 +41,24 @@ def series_to_df(s: pd.Series, value_name: str, index_name: str) -> pd.DataFrame
 
 @st.cache_data(show_spinner=False)
 def load_data(path: str) -> pd.DataFrame:
-    # 한글 CSV라 cp949 사용
-    df = pd.read_csv(path, encoding="cp949")
+    # 여러 인코딩을 순서대로 시도 (cp949, utf-8-sig, utf-8)
+    encodings = ["cp949", "utf-8-sig", "utf-8"]
+
+    last_err = None
+    for enc in encodings:
+        try:
+            df = pd.read_csv(path, encoding=enc)
+            break
+        except UnicodeDecodeError as e:
+            last_err = e
+            continue
+    else:
+        st.error(f"CSV 인코딩을 해석하지 못했습니다.\n마지막 에러: {last_err}")
+        st.stop()
+
     if "시도" in df.columns:
         df["시도"] = df["시도"].astype(str).str.strip()
     return df
-
 
 # 시도 → TL_SCCO_CTPRVN.json 의 CTP_KOR_NM 매핑
 SIDO_TO_SHP = {
@@ -70,6 +82,7 @@ SIDO_TO_SHP = {
 }
 
 
+
 @st.cache_data(show_spinner=False)
 def load_geojson(path: str):
     if not Path(path).exists():
@@ -86,6 +99,7 @@ if not Path(DATA_FILE).exists():
     st.stop()
 
 df_raw = load_data(DATA_FILE)
+
 
 # 주요 컬럼 이름들
 TARGET_COL = "지역별_의료폐기물"
@@ -606,3 +620,4 @@ if insight_lines:
         st.markdown(line)
 else:
     st.write("데이터에서 기본 인사이트를 추출할 수 없습니다. 컬럼 구성을 확인해주세요.")
+
