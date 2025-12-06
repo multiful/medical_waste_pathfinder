@@ -1,77 +1,118 @@
 # ui_theme.py
 import streamlit as st
 
+PRIMARY = "#2563EB"
+PRIMARY_DARK = "#1D4ED8"
+BG = "#F3F4F6"
+SIDEBAR_BG = "#F9FAFB"
+CARD_BG = "#FFFFFF"
+TEXT = "#111827"
 
-def apply_theme(theme_name: str = "paper-light") -> None:
-    """
-    - config.toml 에서 base/light + primaryColor 세팅한 걸 기본으로 쓰고
-    - 여기서는 글자색 / 사이드바 / 멀티셀렉트 pill 스타일만 살짝 손본다.
-    """
-    css = """
+def apply_theme(theme_name: str = "paper-light"):
+    css = f"""
     <style>
-    /* 전체 텍스트는 진한 회색 계열로 통일 */
+    :root {{
+        --primary: {PRIMARY};
+        --primary-dark: {PRIMARY_DARK};
+        --bg: {BG};
+        --sidebar-bg: {SIDEBAR_BG};
+        --card-bg: {CARD_BG};
+        --text-color: {TEXT};
+    }}
+
+    /* ===== 전체 배경 / 텍스트 ===== */
+    .stApp {{
+        background-color: var(--bg) !important;
+        color: var(--text-color) !important;
+    }}
     .stApp, .stApp p, .stApp span, .stApp label, .stApp li,
-    .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {
-        color: #111827 !important;
-    }
+    .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {{
+        color: var(--text-color) !important;
+    }}
 
-    /* 헤더 배경 투명하게 (위에 회색 띠 안 생기게) */
-    header[data-testid="stHeader"] {
-        background: transparent;
-    }
+    /* 상단 헤더 (검정 띠 제거 느낌) */
+    header[data-testid="stHeader"] {{
+        background-color: var(--bg) !important;
+        color: var(--text-color) !important;
+    }}
+    header[data-testid="stHeader"] * {{
+        color: var(--text-color) !important;
+    }}
 
-    /* 메인 영역 살짝 여백 */
-    section.main > div {
-        padding-top: 0.5rem;
-    }
+    /* ===== 사이드바 ===== */
+    section[data-testid="stSidebar"] {{
+        background-color: var(--sidebar-bg) !important;
+        color: var(--text-color) !important;
+    }}
+    section[data-testid="stSidebar"] * {{
+        color: var(--text-color) !important;
+    }}
 
-    /* 사이드바는 흰색 카드 느낌으로 */
-    [data-testid="stSidebar"] {
-        background-color: #FFFFFF !important;
-        color: #111827 !important;
-        border-right: 1px solid #E5E7EB !important;
-    }
+    /* ===== 공통 카드 스타일 (metric, 컨테이너 등) ===== */
+    div[data-testid="stMetric"], .stApp .card-like {{
+        background-color: var(--card-bg) !important;
+        border-radius: 16px !important;
+        border: 1px solid #E5E7EB !important;
+        padding: 0.75rem 1rem !important;
+        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
+    }}
 
-    /* 사이드바 안의 제목(label) 색 진하게 */
-    [data-testid="stSidebar"] div[data-testid="stWidgetLabel"] > label {
-        color: #111827 !important;
-        font-weight: 600;
-    }
+    /* ===== 입력 위젯들 박스 느낌 통일 ===== */
 
-    /* 멀티셀렉트/셀렉트 박스 컨테이너 (검정 배경 제거) */
-    div[data-baseweb="select"] > div {
-        background-color: #F9FAFB !important;
+    /* Selectbox / Multiselect / Number input 등 공통 외곽 */
+    div[data-testid="stSelectbox"],
+    div[data-testid="stMultiSelect"],
+    div[data-testid="stNumberInput"],
+    div[data-testid="stTextInput"],
+    div[data-testid="stSlider"],
+    div[data-testid="stDateInput"] {{
+        background-color: var(--card-bg) !important;
         border-radius: 12px !important;
         border: 1px solid #E5E7EB !important;
-    }
+        padding: 4px 8px !important;
+    }}
 
-    /* 멀티셀렉트 선택된 값 pill → 파란색 뱃지로 통일 */
-    div[data-baseweb="tag"] {
-        background-color: #2563EB !important;  /* 파란색 */
-        color: #FFFFFF !important;
+    /* BaseWeb select 내부 배경 */
+    div[data-baseweb="select"],
+    div[data-baseweb="input"] {{
+        background-color: transparent !important;
+        color: var(--text-color) !important;
+    }}
+
+    /* ===== 멀티셀렉트 토큰: 파란 pill ===== */
+    div[data-baseweb="tag"] {{
+        background-color: var(--primary) !important;
         border-radius: 999px !important;
         border: none !important;
         padding-top: 2px !important;
         padding-bottom: 2px !important;
-    }
-    div[data-baseweb="tag"] span {
+    }}
+    div[data-baseweb="tag"] span {{
         color: #FFFFFF !important;
-    }
-    div[data-baseweb="tag"] svg {
+        font-weight: 500 !important;
+    }}
+    div[data-baseweb="tag"] svg {{
         fill: #FFFFFF !important;
-    }
+    }}
 
-    /* 버튼 기본도 파란색 느낌으로 정리 (있으면) */
-    button[kind="primary"] {
-        background-color: #2563EB !important;
+    /* ===== 버튼 (기본/primary 둘 다) ===== */
+    .stButton > button, button[kind="primary"] {{
+        background-color: var(--primary) !important;
         color: #FFFFFF !important;
         border-radius: 999px !important;
         border: none !important;
-    }
-    button[kind="secondary"] {
-        color: #2563EB !important;
-        border-color: #2563EB !important;
-    }
+        font-weight: 600 !important;
+        padding: 0.5rem 1.3rem !important;
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+    }}
+    .stButton > button:hover, button[kind="primary"]:hover {{
+        background-color: var(--primary-dark) !important;
+    }}
+
+    /* 체크박스 / 라디오 버튼 텍스트 색상 */
+    div[role="radiogroup"] label, div[role="checkbox"] label {{
+        color: var(--text-color) !important;
+    }}
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
