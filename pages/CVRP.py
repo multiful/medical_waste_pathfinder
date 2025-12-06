@@ -7,6 +7,10 @@ import plotly.express as px
 import streamlit as st
 import streamlit.components.v1 as components
 
+from ui_theme import apply_theme
+
+apply_theme("neo-dark")   # 또는 "paper-light", "glass-dark"
+
 def inject_custom_css():
     st.markdown(
         """
