@@ -1,9 +1,11 @@
+# .streamlit/config.toml
 [theme]
-primaryColor = "#ff4b4b"             # 버튼/체크박스 포인트 색
-backgroundColor = "#050814"          # 전체 배경
-secondaryBackgroundColor = "#0b1220" # 카드/박스 배경
-textColor = "#f9fafb"                # 기본 글자색
-font = "sans serif"                  # 기본 폰트
+base = "light"
+primaryColor = "#2563EB"          # 버튼/포커스 파란색
+backgroundColor = "#F3F4F6"       # 전체 배경 (연한 회색)
+secondaryBackgroundColor = "#FFFFFF"  # 카드 / 사이드바 배경
+textColor = "#111827"             # 기본 글자색 (진한 회색 = 거의 검정)
+font = "sans serif"
 
 [server]
 headless = true
