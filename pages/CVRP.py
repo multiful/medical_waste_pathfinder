@@ -29,7 +29,6 @@ st.set_page_config(
 apply_theme()
 
 st.title("🚚 의료폐기물 수요 모니터링 & 동적 경로 결과 요약")
-st.caption("• 수요: cvrp_master_db.csv  • 노드: all_nodes.csv")
 st.markdown("---")
 
 # -------------------------------------------------
