@@ -499,7 +499,7 @@ CVRP 결과 지도를 아래에 임베딩했습니다.
 )
 
 html_file_name = "cvrp_geojson_visualization_final.html"
-html_path = Path(".") / html_file_name
+html_path = Path("data") / html_file_name
 
 if html_path.exists():
     try:
