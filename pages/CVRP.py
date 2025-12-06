@@ -27,6 +27,7 @@ st.markdown("---")
 # -------------------------------------------------
 @st.cache_data
 def load_data():
+    # ✅ 모든 CSV는 data/ 폴더 기준으로 읽기
     data_dir = Path("./data")
 
     # 1) 수요 마스터 DB
@@ -35,7 +36,19 @@ def load_data():
         st.error(f"❌ '{cvrp_path.resolve()}' 파일을 찾을 수 없습니다.")
         return None, None, None
 
-    df = pd.read_csv(cvrp_path)
+    # 인코딩 + 빈 파일 방어
+    try:
+        try:
+            df = pd.read_csv(cvrp_path, encoding="cp949")
+        except UnicodeDecodeError:
+            df = pd.read_csv(cvrp_path, encoding="utf-8-sig")
+    except pd.errors.EmptyDataError:
+        st.error(
+            f"❌ '{cvrp_path.name}' 파일이 비어 있습니다.\n"
+            "로컬에서 cvrp_master_db.csv 내용을 확인하고, "
+            "데이터가 들어있는 파일로 다시 업로드/커밋해 주세요."
+        )
+        return None, None, None
 
     if "Daily_Demand_Kg" not in df.columns:
         if "Daily_Demand" in df.columns:
@@ -47,20 +60,24 @@ def load_data():
     nodes_path = data_dir / "all_nodes.csv"
     nodes_df = pd.DataFrame()
     if nodes_path.exists():
-        nodes_df = pd.read_csv(nodes_path)
+        try:
+            nodes_df = pd.read_csv(nodes_path, encoding="cp949")
+        except UnicodeDecodeError:
+            nodes_df = pd.read_csv(nodes_path, encoding="utf-8-sig")
 
     # 3) 2025 예측 결과
     forecast_path = data_dir / "2025_regional_forecast_final.csv"
     forecast_df = pd.DataFrame()
     if forecast_path.exists():
-        for enc in ("cp949", "utf-8", "utf-8-sig"):
+        for enc in ("cp949", "utf-8-sig", "utf-8"):
             try:
                 forecast_df = pd.read_csv(forecast_path, encoding=enc)
                 break
-            except Exception:
+            except UnicodeDecodeError:
                 continue
 
     return df, nodes_df, forecast_df
+
 
 
 df_original, nodes_df, forecast_df = load_data()
