@@ -7,4 +7,3 @@ folium
 geopandas
 streamlit_folium
 altair
-ortools==9.14.6206
