@@ -340,11 +340,10 @@ if selected_menu == "수요 패턴":
         wd_grp["요일"] = pd.Categorical(
             wd_grp["요일"], categories=weekday_order, ordered=True
         )
-        wd_grp = wd_grp.sort_values("요일")
         fig_wd = px.bar(
             wd_grp,
             x="요일",
-            y[value_col],
+            y=value_col,  # ✅ 이렇게 고쳐야 함
             title="요일별 평균 수요량 (평일 vs 주말 효과)",
         )
         st.plotly_chart(fig_wd, use_container_width=True)
