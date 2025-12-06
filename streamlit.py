@@ -10,6 +10,10 @@ import altair as alt
 import plotly.express as px
 import streamlit as st
 
+from ui_theme import apply_theme
+
+apply_theme("neo-dark")   # 또는 "paper-light", "glass-dark"
+
 def inject_custom_css():
     st.markdown(
         """
@@ -677,5 +681,6 @@ if insight_lines:
         st.markdown(line)
 else:
     st.write("데이터에서 기본 인사이트를 추출할 수 없습니다. 컬럼 구성을 확인해주세요.")
+
 
 
