@@ -17,12 +17,6 @@ import streamlit.components.v1 as components
 # -------------------------------------------------
 # 1. 페이지 기본 설정
 # -------------------------------------------------
-st.set_page_config(
-    page_title="의료폐기물 수요 & 경로 요약",
-    page_icon="🚚",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
 
 st.title("🚚 의료폐기물 수요 모니터링 & 동적 경로 결과 요약")
 st.caption("• 수요: cvrp_master_db.csv  • 노드: all_nodes.csv  • 예측: 2025_regional_forecast_final.csv")
