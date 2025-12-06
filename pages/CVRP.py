@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-2페이지: 의료폐기물 수요 모니터링 + 2025 예측 + CVRP 경로 결과 요약
-- 탭(tab) 제거, 섹션별로 세로로 나열
-- 고위험군(서울/경기/부산) vs 일반지역 비교, 2025 예측, CVRP 시나리오 반영
-"""
-
 from pathlib import Path
 
 import numpy as np
@@ -22,48 +15,35 @@ st.title("🚚 의료폐기물 수요 모니터링 & 동적 경로 결과 요약
 st.caption("• 수요: cvrp_master_db.csv  • 노드: all_nodes.csv  • 예측: 2025_regional_forecast_final.csv")
 st.markdown("---")
 
+# 🔹 repo 루트 기준 data 폴더
+ROOT_DIR = Path(__file__).resolve().parent.parent   # pages/ 의 한 단계 위
+DATA_DIR = ROOT_DIR / "data"
+
+
 # -------------------------------------------------
 # 2. 데이터 로드 (캐싱)
 # -------------------------------------------------
-from pathlib import Path
-import numpy as np
-import pandas as pd
-import pydeck as pdk
-import plotly.express as px
-import streamlit as st
-import streamlit.components.v1 as components
-
-# -----------------------------
-# repo 루트 / data 디렉토리 고정
-# -----------------------------
-ROOT_DIR = Path(__file__).resolve().parents[1]
-DATA_DIR = ROOT_DIR / "data"
-
 @st.cache_data
 def load_data():
-    # 1) 수요 마스터 DB
     cvrp_path = DATA_DIR / "cvrp_master_db.csv"
     if not cvrp_path.exists():
         st.error(f"❌ '{cvrp_path.resolve()}' 파일을 찾을 수 없습니다.")
         return None, None, None
 
-    # ✅ 서버에서 실제로 보고 있는 파일 크기 찍어보기
     file_size = cvrp_path.stat().st_size
     st.caption(f"[DEBUG] cvrp_master_db.csv size on server: {file_size:,} bytes")
 
-    # 인코딩 여러 개 시도
     df = None
     last_err = None
     for enc in ("cp949", "utf-8-sig", "utf-8", "latin1"):
         try:
             df = pd.read_csv(cvrp_path, encoding=enc, low_memory=False)
-            st.caption(f"[DEBUG] cvrp_master_db.csv loaded with encoding='{enc}', shape={df.shape}")
+            st.caption(f"[DEBUG] loaded with encoding='{enc}', shape={df.shape}")
             break
         except UnicodeDecodeError as e:
             last_err = e
             continue
         except pd.errors.EmptyDataError as e:
-            # ❗ pandas가 "컬럼이 하나도 없다"라고 판단한 케이스
             st.error(
                 "❌ cvrp_master_db.csv 를 읽는 중 pandas가 '빈 파일 또는 컬럼 없음'으로 인식했습니다.\n"
                 "서버에서의 파일 앞부분(raw bytes)을 아래에 출력합니다."
@@ -77,14 +57,13 @@ def load_data():
         st.error(f"❌ cvrp_master_db.csv 로딩 실패: {repr(last_err)}")
         return None, None, None
 
-    # Daily_Demand_Kg 보정
     if "Daily_Demand_Kg" not in df.columns:
         if "Daily_Demand" in df.columns:
             df["Daily_Demand_Kg"] = df["Daily_Demand"]
         else:
             df["Daily_Demand_Kg"] = 0
 
-    # 2) 노드 (위경도)
+    # 2) 노드
     nodes_path = DATA_DIR / "all_nodes.csv"
     nodes_df = pd.DataFrame()
     if nodes_path.exists():
@@ -93,7 +72,7 @@ def load_data():
         except UnicodeDecodeError:
             nodes_df = pd.read_csv(nodes_path, encoding="utf-8-sig")
 
-    # 3) 2025 예측 결과
+    # 3) 2025 예측
     forecast_path = DATA_DIR / "2025_regional_forecast_final.csv"
     forecast_df = pd.DataFrame()
     if forecast_path.exists():
@@ -105,6 +84,12 @@ def load_data():
                 continue
 
     return df, nodes_df, forecast_df
+
+
+# ✅ 여기서 한 번만 실제로 로드
+df_original, nodes_df, forecast_df = load_data()
+if df_original is None:
+    st.stop()
 
 # -------------------------------------------------
 # 3. 사이드바 필터
